@@ -138,3 +138,12 @@ python3 fdbcs.py composition --fasta data/human_hbb/db.fa
 ```bash
 python3 fdbcs.py audit --metadata data/human_hbb/Metadata.txt
 ```
+
+---
+
+## 6. 系统自动分析 (初始化后执行)
+
+在执行 `init` 命令初始化数据库后，系统会自动触发 phylogenetic 分析流程：
+1. **按目分组**：自动将数据库中的序列按分类学中的“目” (Order) 进行分组。
+2. **比对与建树**：对每个“目”的序列自动调用 `mafft` 进行多序列比对，并调用 `fasttree` 构建系统发育树。
+3. **结果展示**：分析结果文件（`.fasta`, `_aligned.fasta`, `.tree`）将自动保存在 `analysis_results/` 目录下。

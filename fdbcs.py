@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import os
 import argparse
 from scripts.db_processor import process_database, delete_records, extract_records
 from scripts.nucleotide_composition import analyze_nucleotides
@@ -42,6 +43,19 @@ def main():
     parser_audit.add_argument('--metadata', required=True, help='Path to the metadata file')
 
     args = parser.parse_args()
+    
+    # Resolve sqlite path
+    if hasattr(args, 'sqlite') and args.sqlite:
+        db_dir = os.path.dirname(args.sqlite)
+        db_name = os.path.basename(args.sqlite).replace(".index.db", "")
+        new_path = os.path.join(db_dir, db_name, os.path.basename(args.sqlite))
+        
+        if args.command == 'init':
+            if not os.path.exists(os.path.dirname(new_path)):
+                os.makedirs(os.path.dirname(new_path), exist_ok=True)
+            args.sqlite = new_path
+        elif os.path.exists(new_path):
+            args.sqlite = new_path
     
     if args.command == 'init':
         process_database(args.fasta, args.metadata, args.sqlite, args.export_stats_rank, args.export_stats_file)

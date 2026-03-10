@@ -4,7 +4,51 @@ import os
 import json
 import sqlite3
 import argparse
+import subprocess
+import shutil
 from collections import Counter
+
+def process_orders(sqlite_path, fasta_path):
+    db_dir = os.path.dirname(sqlite_path)
+    output_dir = os.path.join(db_dir, "analysis_results")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        
+    conn = sqlite3.connect(sqlite_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT accession, taxonomy FROM sequences")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    orders = {}
+    for acc, tax in rows:
+        parts = tax.split(';')
+        order = parts[4] if len(parts) > 4 else "Unknown_Order"
+        if order not in orders: orders[order] = []
+        orders[order].append(acc)
+        
+    for order, accessions in orders.items():
+        print(f"Processing Order: {order} ({len(accessions)} sequences)")
+        order_fasta = os.path.join(output_dir, f"{order}.fasta")
+        
+        # Clear the file first
+        with open(order_fasta, 'w') as f:
+            pass
+            
+        # Extract sequences for this order
+        for acc in accessions:
+            extract_records(sqlite_path, fasta_path, accession=acc, output_file=order_fasta, mode='a')
+        
+        # Run MAFFT and FastTree
+        aligned_fasta = os.path.join(output_dir, f"{order}_aligned.fasta")
+        tree_file = os.path.join(output_dir, f"{order}.tree")
+        
+        if shutil.which("mafft") and shutil.which("fasttree"):
+            subprocess.run(["mafft", "--auto", order_fasta], stdout=open(aligned_fasta, "w"), check=True)
+            subprocess.run(["fasttree", "-nt", aligned_fasta], stdout=open(tree_file, "w"), check=True)
+            print(f"  Tree saved to {tree_file}")
+        else:
+            print(f"  Warning: mafft or fasttree not found. Skipping phylogenetic analysis for {order}.")
 
 def process_database(fasta_path, metadata_path, sqlite_path, export_stats_rank=None, export_stats_file=None):
     if not os.path.exists(fasta_path):
@@ -169,6 +213,10 @@ def process_database(fasta_path, metadata_path, sqlite_path, export_stats_rank=N
         else:
             print(f"Warning: Rank '{export_stats_rank}' not found in taxonomy stats.", file=sys.stderr)
 
+    # 6. Process Orders
+    print("Starting phylogenetic analysis by Order...", file=sys.stderr)
+    process_orders(sqlite_path, fasta_path)
+
     print(json.dumps({"status": "success", "overview": overview}))
 
 def delete_records(sqlite_path, accession=None, taxonomy=None):
@@ -191,7 +239,7 @@ def delete_records(sqlite_path, accession=None, taxonomy=None):
     conn.commit()
     conn.close()
 
-def extract_records(sqlite_path, fasta_path, accession=None, taxonomy=None, output_file=None):
+def extract_records(sqlite_path, fasta_path, accession=None, taxonomy=None, output_file=None, mode='w'):
     if not os.path.exists(sqlite_path):
         print(f"Error: Database not found: {sqlite_path}", file=sys.stderr)
         sys.exit(1)
@@ -217,7 +265,7 @@ def extract_records(sqlite_path, fasta_path, accession=None, taxonomy=None, outp
         print("No records found matching the criteria.", file=sys.stderr)
         return
         
-    out_f = open(output_file, 'w', encoding='utf-8') if output_file else sys.stdout
+    out_f = open(output_file, mode, encoding='utf-8') if output_file else sys.stdout
     
     try:
         with open(fasta_path, 'rb') as f:
@@ -237,7 +285,7 @@ def extract_records(sqlite_path, fasta_path, accession=None, taxonomy=None, outp
     finally:
         if output_file:
             out_f.close()
-            print(f"Extracted {len(rows)} record(s) to {output_file}")
+            # print(f"Extracted {len(rows)} record(s) to {output_file}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process FASTA and Metadata into SQLite, and provide CLI operations.')
