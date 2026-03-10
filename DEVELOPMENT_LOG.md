@@ -47,6 +47,9 @@
     - **计算与展示分离**: 将所有生物信息学处理逻辑（FASTA/Metadata 解析、统计计算）从 Node.js 迁移至 Python 脚本 (`db_processor.py`)。
     - **数据库职责强化**: SQL 数据库 (SQLite) 现在不仅存储序列元数据，还存储预计算的统计信息（总览、分类分布等），极大提升了前端展示的响应速度。
     - **Web 逻辑精简**: Node.js 后端现在仅作为轻量级的 API 代理，负责触发 Python 脚本及查询数据库，不再参与复杂的生物信息计算。
+- **[21:15] 命令行工具 (CLI) 增强**:
+    - **CLI 接口重构**: 将 `scripts/db_processor.py` 升级为全功能的命令行工具，支持 `init` (初始化)、`delete` (删除记录) 和 `extract` (O(1) 提取序列) 等子命令。
+    - **CLI 文档同步**: 新增 `CLI_USAGE.md` 和 `CLI_USAGE_CN.md`，详细记录了命令行工具的使用方法和示例，并同步更新了 `PROJECT.md` 和 `PROJECT_CN.md`。
 
 ---
 *此文档将持续记录后续的所有修改与优化信息。详细工程细节请参阅 [PROJECT.md](./PROJECT.md) 或 [PROJECT_CN.md](./PROJECT_CN.md)。*

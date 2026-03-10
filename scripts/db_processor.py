@@ -6,7 +6,7 @@ import sqlite3
 import argparse
 from collections import Counter
 
-def process_database(fasta_path, metadata_path, sqlite_path):
+def process_database(fasta_path, metadata_path, sqlite_path, export_stats_rank=None, export_stats_file=None):
     if not os.path.exists(fasta_path):
         print(json.dumps({"error": f"FASTA file not found: {fasta_path}"}))
         sys.exit(1)
@@ -79,12 +79,6 @@ def process_database(fasta_path, metadata_path, sqlite_path):
     
     with open(fasta_path, 'r', encoding='utf-8') as f:
         current_record = None
-        offset = 0
-        
-        # We need to track byte offset for random access
-        f.seek(0, os.SEEK_END)
-        file_size = f.tell()
-        f.seek(0)
         
         # Re-opening in binary mode to get accurate byte offsets
         with open(fasta_path, 'rb') as fb:
@@ -162,12 +156,124 @@ def process_database(fasta_path, metadata_path, sqlite_path):
     conn.commit()
     conn.close()
     
+    # Export stats if requested
+    if export_stats_rank:
+        if export_stats_rank in tax_stats:
+            stats_to_export = dict(tax_stats[export_stats_rank])
+            if export_stats_file:
+                with open(export_stats_file, 'w', encoding='utf-8') as f:
+                    json.dump(stats_to_export, f, indent=2, ensure_ascii=False)
+            else:
+                print(f"\n--- {export_stats_rank} Statistics ---", file=sys.stderr)
+                print(json.dumps(stats_to_export, indent=2, ensure_ascii=False), file=sys.stderr)
+        else:
+            print(f"Warning: Rank '{export_stats_rank}' not found in taxonomy stats.", file=sys.stderr)
+
     print(json.dumps({"status": "success", "overview": overview}))
 
+def delete_records(sqlite_path, accession=None, taxonomy=None):
+    if not os.path.exists(sqlite_path):
+        print(f"Error: Database not found: {sqlite_path}", file=sys.stderr)
+        sys.exit(1)
+        
+    conn = sqlite3.connect(sqlite_path)
+    cursor = conn.cursor()
+    
+    if accession:
+        cursor.execute("DELETE FROM sequences WHERE accession = ?", (accession,))
+        print(f"Deleted {cursor.rowcount} record(s) with accession: {accession}")
+    elif taxonomy:
+        cursor.execute("DELETE FROM sequences WHERE taxonomy LIKE ?", (f"%{taxonomy}%",))
+        print(f"Deleted {cursor.rowcount} record(s) matching taxonomy: {taxonomy}")
+    else:
+        print("Error: Must specify either --accession or --taxonomy for deletion.", file=sys.stderr)
+        
+    conn.commit()
+    conn.close()
+
+def extract_records(sqlite_path, fasta_path, accession=None, taxonomy=None, output_file=None):
+    if not os.path.exists(sqlite_path):
+        print(f"Error: Database not found: {sqlite_path}", file=sys.stderr)
+        sys.exit(1)
+    if not os.path.exists(fasta_path):
+        print(f"Error: FASTA file not found: {fasta_path}", file=sys.stderr)
+        sys.exit(1)
+        
+    conn = sqlite3.connect(sqlite_path)
+    cursor = conn.cursor()
+    
+    if accession:
+        cursor.execute("SELECT header, offset, length FROM sequences WHERE accession = ?", (accession,))
+    elif taxonomy:
+        cursor.execute("SELECT header, offset, length FROM sequences WHERE taxonomy LIKE ?", (f"%{taxonomy}%",))
+    else:
+        print("Error: Must specify either --accession or --taxonomy for extraction.", file=sys.stderr)
+        sys.exit(1)
+        
+    rows = cursor.fetchall()
+    conn.close()
+    
+    if not rows:
+        print("No records found matching the criteria.", file=sys.stderr)
+        return
+        
+    out_f = open(output_file, 'w', encoding='utf-8') if output_file else sys.stdout
+    
+    try:
+        with open(fasta_path, 'rb') as f:
+            for header, offset, length in rows:
+                f.seek(offset)
+                seq_data = b""
+                line = f.readline()
+                seq_data += line
+                while True:
+                    pos = f.tell()
+                    line = f.readline()
+                    if not line or line.startswith(b'>'):
+                        break
+                    seq_data += line
+                
+                out_f.write(seq_data.decode('utf-8', errors='ignore'))
+    finally:
+        if output_file:
+            out_f.close()
+            print(f"Extracted {len(rows)} record(s) to {output_file}")
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Process FASTA and Metadata into SQLite.')
-    parser.add_argument('--fasta', required=True, help='Path to the FASTA file')
-    parser.add_argument('--metadata', help='Path to the metadata file')
-    parser.add_argument('--sqlite', required=True, help='Path to the output SQLite file')
+    parser = argparse.ArgumentParser(description='Process FASTA and Metadata into SQLite, and provide CLI operations.')
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # Init command
+    parser_init = subparsers.add_parser('init', help='Initialize the database')
+    parser_init.add_argument('--fasta', required=True, help='Path to the FASTA file')
+    parser_init.add_argument('--metadata', help='Path to the metadata file')
+    parser_init.add_argument('--sqlite', required=True, help='Path to the output SQLite file')
+    parser_init.add_argument('--export-stats', dest='export_stats_rank', help='Export statistics for a specific taxonomic rank (e.g., Species, Genus)')
+    parser_init.add_argument('--output', dest='export_stats_file', help='File to save the exported statistics (if not specified, prints to stderr)')
+    
+    # Delete command
+    parser_del = subparsers.add_parser('delete', help='Delete records from the database')
+    parser_del.add_argument('--sqlite', required=True, help='Path to the SQLite database')
+    group_del = parser_del.add_mutually_exclusive_group(required=True)
+    group_del.add_argument('--accession', help='Accession ID to delete')
+    group_del.add_argument('--taxonomy', help='Taxonomy keyword to delete')
+    
+    # Extract command
+    parser_ext = subparsers.add_parser('extract', help='Extract sequences from the database')
+    parser_ext.add_argument('--sqlite', required=True, help='Path to the SQLite database')
+    parser_ext.add_argument('--fasta', required=True, help='Path to the original FASTA file')
+    group_ext = parser_ext.add_mutually_exclusive_group(required=True)
+    group_ext.add_argument('--accession', help='Accession ID to extract')
+    group_ext.add_argument('--taxonomy', help='Taxonomy keyword to extract')
+    parser_ext.add_argument('--output', help='File to save the extracted sequences (if not specified, prints to stdout)')
+    
     args = parser.parse_args()
-    process_database(args.fasta, args.metadata, args.sqlite)
+    
+    if args.command == 'init':
+        process_database(args.fasta, args.metadata, args.sqlite, args.export_stats_rank, args.export_stats_file)
+    elif args.command == 'delete':
+        delete_records(args.sqlite, args.accession, args.taxonomy)
+    elif args.command == 'extract':
+        extract_records(args.sqlite, args.fasta, args.accession, args.taxonomy, args.output)
+    else:
+        parser.print_help()

@@ -51,6 +51,11 @@ export default function FdbcsSystem() {
   const [overviewStats, setOverviewStats] = useState<OverviewStats | null>(null);
   const [allSequences, setAllSequences] = useState<{accession: string, taxonomy: string}[]>([]);
   const [showTaxaModal, setShowTaxaModal] = useState(false);
+  const [showSeqModal, setShowSeqModal] = useState(false);
+  const [seqPage, setSeqPage] = useState(1);
+  const [paginatedSeqs, setPaginatedSeqs] = useState<{accession: string, taxonomy: string}[]>([]);
+  const [loadingSeqs, setLoadingSeqs] = useState(false);
+  const seqsPerPage = 50;
   const [selectedRankForList, setSelectedRankForList] = useState<string | null>(null);
   const [opResult, setOpResult] = useState<any>(null);
   const [opLoading, setOpLoading] = useState(false);
@@ -61,6 +66,34 @@ export default function FdbcsSystem() {
   useEffect(() => {
     fetchDatabases();
   }, []);
+
+  useEffect(() => {
+    if (showSeqModal && activeDb) {
+      fetchPaginatedSeqs(seqPage);
+    }
+  }, [showSeqModal, seqPage, activeDb]);
+
+  const fetchPaginatedSeqs = async (page: number) => {
+    setLoadingSeqs(true);
+    try {
+      const offset = (page - 1) * seqsPerPage;
+      const res = await fetch('/api/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          dbName: activeDb, 
+          query: `SELECT accession, taxonomy FROM sequences LIMIT ${seqsPerPage} OFFSET ${offset}` 
+        })
+      });
+      const data = await res.json();
+      if (!data.error) {
+        setPaginatedSeqs(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setLoadingSeqs(false);
+  };
 
   const fetchDatabases = async (retries = 3) => {
     try {
@@ -177,11 +210,28 @@ export default function FdbcsSystem() {
       const allSeqData = await allSeqRes.json();
       const statsData = await statsRes.json();
       
-      if (!overviewData.error && overviewData.length > 0) setOverviewStats(JSON.parse(overviewData[0].value));
-      if (!allSeqData.error) setAllSequences(allSeqData);
-      if (!statsData.error && statsData.length > 0) setStats(JSON.parse(statsData[0].value));
+      if (!overviewData.error && overviewData.length > 0) {
+        setOverviewStats(JSON.parse(overviewData[0].value));
+      } else {
+        setOverviewStats(null);
+      }
+      
+      if (!allSeqData.error) {
+        setAllSequences(allSeqData);
+      } else {
+        setAllSequences([]);
+      }
+      
+      if (!statsData.error && statsData.length > 0) {
+        setStats(JSON.parse(statsData[0].value));
+      } else {
+        setStats(null);
+      }
     } catch (err) {
       console.error(err);
+      setOverviewStats(null);
+      setAllSequences([]);
+      setStats(null);
     }
     setLoading(false);
   };
@@ -427,6 +477,28 @@ export default function FdbcsSystem() {
             </motion.div>
           )}
 
+          {view === 'overview' && !overviewStats && !loading && (
+            <motion.div 
+              key="overview-empty"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex flex-col items-center justify-center h-full text-center space-y-4"
+            >
+              <AlertCircle size={48} className="opacity-20" />
+              <h2 className="text-2xl font-bold opacity-60">无法加载数据总览</h2>
+              <p className="text-sm opacity-50 max-w-md">
+                数据库可能尚未完全初始化，或者索引文件已损坏。请返回“数据库管理”页面重新初始化索引。
+              </p>
+              <button 
+                onClick={() => setView('dashboard')}
+                className="mt-4 bg-[#141414] text-[#E4E3E0] px-6 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-all"
+              >
+                返回数据库管理
+              </button>
+            </motion.div>
+          )}
+
           {view === 'overview' && overviewStats && (
             <motion.div 
               key="overview"
@@ -449,14 +521,20 @@ export default function FdbcsSystem() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-white border border-[#141414] rounded-2xl p-6 shadow-sm">
+                <div 
+                  onClick={() => setShowSeqModal(true)}
+                  className="bg-white border border-[#141414] rounded-2xl p-6 shadow-sm cursor-pointer hover:border-indigo-500 transition-all group"
+                >
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
+                    <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl group-hover:bg-indigo-500 group-hover:text-white transition-all">
                       <Hash size={24} />
                     </div>
                     <h3 className="text-sm font-bold uppercase tracking-widest opacity-50">序列总数</h3>
                   </div>
-                  <p className="text-4xl font-mono font-bold">{overviewStats.totalSequences.toLocaleString()}</p>
+                  <div className="flex items-end justify-between border-t border-[#141414]/10 pt-4">
+                    <p className="text-4xl font-mono font-bold">{overviewStats.totalSequences.toLocaleString()}</p>
+                    <ChevronRight size={20} className="opacity-0 group-hover:opacity-100 transition-all" />
+                  </div>
                 </div>
 
                 <div 
@@ -499,26 +577,7 @@ export default function FdbcsSystem() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white border border-[#141414] rounded-3xl p-8 h-[400px] flex flex-col">
-                  <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                    <FileText size={20} />
-                    序列列表 (前 500 条)
-                  </h3>
-                  <div className="flex-1 overflow-y-auto pr-2 space-y-2 font-mono text-xs">
-                    <div className="grid grid-cols-3 pb-2 border-bottom border-[#141414]/10 opacity-50 font-bold uppercase">
-                      <span>Accession</span>
-                      <span className="col-span-2">Taxonomy</span>
-                    </div>
-                    {allSequences.map((seq, i) => (
-                      <div key={i} className="grid grid-cols-3 py-1 border-bottom border-[#141414]/5 hover:bg-[#141414]/5 transition-all">
-                        <span className="font-bold">{seq.accession}</span>
-                        <span className="col-span-2 opacity-70 truncate">{seq.taxonomy}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
+              <div className="grid grid-cols-1 gap-8">
                 <div className="space-y-6">
                   <div className="bg-white border border-[#141414] rounded-3xl p-8">
                     <h3 className="text-xl font-bold mb-6">序列长度分布摘要</h3>
@@ -538,9 +597,9 @@ export default function FdbcsSystem() {
                     </div>
                   </div>
 
-                  <div className="bg-[#141414] text-[#E4E3E0] rounded-3xl p-8 flex items-center justify-between">
+                  <div className="bg-[#141414] text-[#E4E3E0] rounded-3xl p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div className="flex items-center gap-6">
-                      <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center">
+                      <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
                         <DbIcon size={32} />
                       </div>
                       <div>
@@ -548,7 +607,7 @@ export default function FdbcsSystem() {
                         <p className="text-sm opacity-60">数据库已就绪，索引状态正常。</p>
                       </div>
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-4">
                       <button 
                         onClick={() => loadDatabase(activeDb!)}
                         className="border border-white/20 text-white px-6 py-3 rounded-xl font-bold hover:bg-white/10 transition-all flex items-center gap-2"
@@ -656,6 +715,83 @@ export default function FdbcsSystem() {
                             ))}
                           </div>
                         )}
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+
+              {/* Sequence List Modal */}
+              <AnimatePresence>
+                {showSeqModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setShowSeqModal(false)}
+                      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                    />
+                    <motion.div 
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.9, opacity: 0 }}
+                      className="relative bg-white border border-[#141414] rounded-3xl w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
+                    >
+                      <div className="p-6 border-bottom border-[#141414]/10 flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
+                            <Hash size={24} />
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-bold">序列列表</h3>
+                            <p className="text-sm opacity-60">共 {overviewStats.totalSequences.toLocaleString()} 条序列</p>
+                          </div>
+                        </div>
+                        <button onClick={() => setShowSeqModal(false)} className="p-2 hover:bg-[#141414]/5 rounded-full transition-all">
+                          <Plus size={24} className="rotate-45" />
+                        </button>
+                      </div>
+                      
+                      <div className="flex-1 overflow-y-auto p-6">
+                        {loadingSeqs ? (
+                          <div className="flex justify-center items-center h-full">
+                            <RefreshCw size={32} className="animate-spin opacity-50" />
+                          </div>
+                        ) : (
+                          <div className="space-y-2 font-mono text-xs">
+                            <div className="grid grid-cols-3 pb-2 border-bottom border-[#141414]/10 opacity-50 font-bold uppercase">
+                              <span>Accession</span>
+                              <span className="col-span-2">Taxonomy</span>
+                            </div>
+                            {paginatedSeqs.map((seq, i) => (
+                              <div key={i} className="grid grid-cols-3 py-2 border-bottom border-[#141414]/5 hover:bg-[#141414]/5 transition-all">
+                                <span className="font-bold">{seq.accession}</span>
+                                <span className="col-span-2 opacity-70 truncate" title={seq.taxonomy}>{seq.taxonomy}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4 border-t border-[#141414]/10 flex justify-between items-center bg-[#141414]/5">
+                        <button 
+                          onClick={() => setSeqPage(p => Math.max(1, p - 1))}
+                          disabled={seqPage === 1 || loadingSeqs}
+                          className="px-4 py-2 bg-white border border-[#141414] rounded-lg text-sm font-bold disabled:opacity-50 transition-all"
+                        >
+                          上一页
+                        </button>
+                        <span className="text-sm font-mono font-bold">
+                          第 {seqPage} 页 / 共 {Math.ceil(overviewStats.totalSequences / seqsPerPage)} 页
+                        </span>
+                        <button 
+                          onClick={() => setSeqPage(p => p + 1)}
+                          disabled={seqPage >= Math.ceil(overviewStats.totalSequences / seqsPerPage) || loadingSeqs}
+                          className="px-4 py-2 bg-white border border-[#141414] rounded-lg text-sm font-bold disabled:opacity-50 transition-all"
+                        >
+                          下一页
+                        </button>
                       </div>
                     </motion.div>
                   </div>

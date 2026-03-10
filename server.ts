@@ -109,7 +109,7 @@ async function startServer() {
       if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });
 
       const scriptPath = path.join(__dirname, "scripts", "db_processor.py");
-      const cmd = `python3 "${scriptPath}" --fasta "${fastaFile}" --metadata "${metadataFile}" --sqlite "${indexPath}"`;
+      const cmd = `python3 "${scriptPath}" init --fasta "${fastaFile}" --metadata "${metadataFile}" --sqlite "${indexPath}"`;
       
       console.log(`Executing: ${cmd}`);
       const { stdout, stderr } = await execAsync(cmd);
