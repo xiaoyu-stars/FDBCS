@@ -61,6 +61,14 @@
     - 同步更新了 CLI 使用说明、开发过程及工程文档。
 
 ### 2026-03-10
+- [11:26] 开发计划重构（CLI-only）:
+    - 按“纯 UNIX CLI FASTA 数据库管理系统”要求，重写 `DEVELOPMENT_PLAN.md`，移除 Web/API 路线。
+    - 新增在服务器使用 CodeX 完成剩余开发的详细 Vibe Coding 技术路线（分支、提交、提示词、验证与节奏）。
+
+- [10:40] 新增开发计划文档:
+    - 读取 `PROJECT.md`、`DEVELOPMENT_LOG.md`、`CLI_USAGE.md` 后，新增 `DEVELOPMENT_PLAN.md`。
+    - 制定了覆盖稳定性、性能、功能完善与发布维护的 8 周分阶段开发路线图。
+
 - [04:30] 开发文档维护:
     - 按照“一天一单元”的规范重构了 `DEVELOPMENT_LOG.md`。
     - 确保所有修改记录均包含准确的时间戳。
