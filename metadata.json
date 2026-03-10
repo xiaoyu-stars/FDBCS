@@ -1,0 +1,5 @@
+{
+  "name": "FDBCS - Fasta Database Control System",
+  "description": "A lightweight control system for managing eDNA reference sequence libraries with SQLite indexing and taxonomic statistics.",
+  "requestFramePermissions": []
+}

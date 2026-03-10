@@ -1,0 +1,5 @@
+AF123456.1	root;Eukaryota;Metazoa;Chordata;Mammalia;Primates;Hominidae;Homo;Homo sapiens	Sample_001	Blood
+NM_000518.5	root;Eukaryota;Metazoa;Chordata;Mammalia;Primates;Hominidae;Homo;Homo sapiens	Sample_002	Tissue
+NM_001201391.1	root;Eukaryota;Metazoa;Chordata;Mammalia;Rodentia;Muridae;Mus;Mus musculus	Sample_003	Liver
+NM_033234.1	root;Eukaryota;Metazoa;Chordata;Mammalia;Rodentia;Muridae;Rattus;Rattus norvegicus	Sample_004	Kidney
+NM_131010.2	root;Eukaryota;Metazoa;Chordata;Actinopterygii;Cypriniformes;Danio;Danio rerio	Sample_005	Gills
