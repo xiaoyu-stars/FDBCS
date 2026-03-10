@@ -11,10 +11,10 @@ FDBCS 是一个轻量级、高性能的本地系统，专为管理和分析 eDNA
 ## 2. 技术栈
 
 ### 后端 (系统核心)
-- **运行时**：Node.js (ES Modules)
-- **框架**：Express.js
-- **数据库**：SQLite (通过 `better-sqlite3`)，用于元数据索引和快速检索。
-- **文件系统**：原生 `fs` 模块，用于直接进行 FASTA 字节偏移读取 (O(1) 序列检索)。
+- **运行时**：Python 3
+- **入口**：统一 CLI (`fdbcs.py`)
+- **数据库**：SQLite，用于元数据索引和快速检索。
+- **文件系统**：Python 原生 I/O，用于直接进行 FASTA 字节偏移读取 (O(1) 序列检索)。
 
 ### 前端 (Web 界面)
 - **框架**：React 18 (TypeScript)
@@ -35,7 +35,7 @@ FDBCS 是一个轻量级、高性能的本地系统，专为管理和分析 eDNA
 FDBCS 系统采用解耦架构，专为高性能和可扩展性而设计：
 
 - **展示层 (Web)**：React + Tailwind CSS + Recharts，提供现代化的响应式用户界面。
-- **API 层 (Node.js)**：Express 服务器，作为 Web UI 与处理/存储层之间的轻量级代理。
+- **CLI 层 (Python)**：`fdbcs.py` 是数据库生命周期与分析流程的主入口。
 - **数据库操作单元 (Python)**：独立的 Unix 可执行程序 (Python 脚本)，负责所有繁重的生物信息学处理，包括 FASTA 解析、元数据匹配和统计计算。
 - **存储层 (SQLite)**：持久化存储序列元数据和预计算的统计报告，确保 UI 的近乎瞬时的数据检索。
 
@@ -103,27 +103,25 @@ FDBCS 系统采用解耦架构，专为高性能和可扩展性而设计：
 - `/data/`：用户提供的数据库文件 (输入)。
 - `/storage/`：系统生成的 SQLite 索引 (内部)。
 - `/src/System.tsx`：Web 界面的主要入口点。
-- `/server.ts`：后端逻辑、API 路由和 Vite 中间件。
 - `/DEVELOPMENT_LOG.md`：变更的按时顺序记录。
 - `/PROJECT.md`：英文版工程规格文档 (单一事实来源)。
 - `/PROJECT_CN.md`：本文件 (中文版工程规格文档)。
 
-### API 规范
-- `GET /api/databases`：列出可用数据库。
-- `POST /api/databases/load`：触发特定文件夹的索引。
-- `GET /api/search?dbName=...&query=...`：搜索元数据。
-- `GET /api/overview?dbName=...`：获取摘要统计。
-- `GET /api/stats?dbName=...`：获取分类阶元计数。
-- `POST /api/operations/run`：执行生物信息学操作。
-- `GET /api/sequence?dbName=...&accession=...`：检索序列字符串。
+### CLI 规范
+- `python3 fdbcs.py --help`：显示统一命令帮助并验证运行环境。
+- `python3 fdbcs.py init ...`：初始化/索引数据库目录。
+- `python3 fdbcs.py extract ...`：按 accession 进行 O(1) 序列提取。
+- `python3 fdbcs.py delete ...`：按条件删除记录。
+- `python3 fdbcs.py composition ...`：核苷酸组成统计。
+- `python3 fdbcs.py audit ...`：分类一致性审计。
 
 ---
 
 ## 6. 开发工作流 (团队/AI 移交)
 - **文档优先**：任何重大的架构变更必须反映在 `PROJECT.md` 和 `PROJECT_CN.md` 中。
 - **变更跟踪**：每次修改必须在 `DEVELOPMENT_LOG.md` 中进行总结。
-- **环境**：确保为 AI 功能设置了 `GEMINI_API_KEY`。
-- **端口**：系统运行在 `3000` 端口。
+- **CLI 首次检查**：本地检查/CI 必须通过 `python3 fdbcs.py --help`。
+- **环境**：若使用 AI 功能，请确保配置 `GEMINI_API_KEY`。
 
 ---
 

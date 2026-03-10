@@ -1,20 +1,28 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# FDBCS
 
-# Run and deploy your AI Studio app
+FDBCS is now CLI-first. The default entrypoint for new users is the unified Python CLI.
 
-This contains everything you need to run your app locally.
+## Quick Start
 
-View your app in AI Studio: https://ai.studio/apps/33ddb648-6e6c-4111-9d1c-1cdb4d41ea3b
+1. (Optional) install Node dependencies if you plan to build the web UI:
+   ```bash
+   npm install
+   ```
+2. Verify CLI is available:
+   ```bash
+   python3 fdbcs.py --help
+   ```
 
-## Run Locally
+## CLI helper scripts
 
-**Prerequisites:**  Node.js
+`package.json` provides thin wrappers around `fdbcs.py`:
 
+- `npm run cli:help` → `python3 fdbcs.py --help`
+- `npm run cli:init` → `python3 fdbcs.py init`
+- `npm run cli:extract` → `python3 fdbcs.py extract`
+- `npm run check:cli` → `python3 fdbcs.py --help`
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+For detailed command examples, see:
+
+- [CLI_USAGE.md](./CLI_USAGE.md)
+- [CLI_USAGE_CN.md](./CLI_USAGE_CN.md)

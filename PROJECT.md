@@ -11,10 +11,10 @@ FDBCS is a lightweight, high-performance local system designed for managing and 
 ## 2. Technical Stack
 
 ### Backend (System Core)
-- **Runtime**: Node.js (ES Modules)
-- **Framework**: Express.js
-- **Database**: SQLite (via `better-sqlite3`) for metadata indexing and rapid retrieval.
-- **File System**: Native `fs` for direct FASTA byte-offset reading (O(1) sequence retrieval).
+- **Runtime**: Python 3
+- **Entry**: Unified CLI (`fdbcs.py`)
+- **Database**: SQLite for metadata indexing and rapid retrieval.
+- **File System**: Native Python I/O for direct FASTA byte-offset reading (O(1) sequence retrieval).
 
 ### Frontend (Web Interface)
 - **Framework**: React 18 (TypeScript)
@@ -35,7 +35,7 @@ FDBCS is a lightweight, high-performance local system designed for managing and 
 The FDBCS system follows a decoupled architecture designed for performance and scalability:
 
 - **Presentation Layer (Web)**: React + Tailwind CSS + Recharts for a modern, responsive user interface.
-- **API Layer (Node.js)**: Express server acting as a thin proxy between the Web UI and the processing/storage layers.
+- **CLI Layer (Python)**: `fdbcs.py` is the primary operational interface for database lifecycle and analysis workflows.
 - **Database Operation Unit (Python)**: Standalone Unix executables (Python scripts) responsible for all heavy-lifting bioinformatics processing, including FASTA parsing, metadata matching, and statistical calculations.
 - **Storage Layer (SQLite)**: Persistent storage for both sequence metadata and pre-calculated statistical reports, ensuring near-instantaneous data retrieval for the UI.
 
@@ -102,27 +102,25 @@ The system supports a 9-level taxonomic hierarchy:
 - `/data/`: User-provided database files (Input).
 - `/storage/`: System-generated SQLite indexes (Internal).
 - `/src/System.tsx`: Main entry point for the Web Interface.
-- `/server.ts`: Backend logic, API routes, and Vite middleware.
 - `/DEVELOPMENT_LOG.md`: Chronological record of changes.
 - `/PROJECT.md`: This document (English version).
 - `/PROJECT_CN.md`: Chinese version of the engineering specification.
 
-### API Specification
-- `GET /api/databases`: List available databases.
-- `POST /api/databases/load`: Trigger indexing for a specific folder.
-- `GET /api/search?dbName=...&query=...`: Search metadata.
-- `GET /api/overview?dbName=...`: Get summary stats.
-- `GET /api/stats?dbName=...`: Get taxonomic rank counts.
-- `POST /api/operations/run`: Execute a bioinformatics operation.
-- `GET /api/sequence?dbName=...&accession=...`: Retrieve sequence string.
+### CLI Specification
+- `python3 fdbcs.py --help`: Show unified command help and verify runtime readiness.
+- `python3 fdbcs.py init ...`: Initialize/index a database folder.
+- `python3 fdbcs.py extract ...`: O(1) sequence extraction by accession.
+- `python3 fdbcs.py delete ...`: Delete records using provided filters.
+- `python3 fdbcs.py composition ...`: Nucleotide composition statistics.
+- `python3 fdbcs.py audit ...`: Taxonomy consistency auditing.
 
 ---
 
 ## 6. Development Workflow (Team/AI Handoff)
-- **Documentation First**: Any major architectural change must be reflected in `PROJECT_SPEC.md`.
+- **Documentation First**: Any major architecture change must be reflected in `PROJECT.md` and `PROJECT_CN.md`.
 - **Change Tracking**: Every modification must be summarized in `DEVELOPMENT_LOG.md`.
-- **Environment**: Ensure `GEMINI_API_KEY` is set for AI features.
-- **Port**: The system runs on port `3000`.
+- **CLI First-Run Check**: Local checks/CI must include `python3 fdbcs.py --help`.
+- **Environment**: Ensure `GEMINI_API_KEY` is set when AI modules are used.
 
 ---
 

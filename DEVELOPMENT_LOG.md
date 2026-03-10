@@ -65,5 +65,12 @@
     - 按照“一天一单元”的规范重构了 `DEVELOPMENT_LOG.md`。
     - 确保所有修改记录均包含准确的时间戳。
 
+### 2026-03-10
+- [11:20] CLI 入口收敛与迁移清理:
+    - 移除 `server.ts`，停止默认 Node 服务端入口。
+    - `package.json` 下线 `dev/start`，新增 `cli:init`、`cli:extract`、`cli:help` 与 `check:cli` 脚本。
+    - 更新 `README.md`，将首次运行路径改为 `python3 fdbcs.py --help`。
+    - 新增 CI 工作流执行 `python3 fdbcs.py --help`，防止回归到服务端入口。
+
 ---
 *此文档将持续记录后续的所有修改与优化信息。详细工程细节请参阅 [PROJECT.md](./PROJECT.md) 或 [PROJECT_CN.md](./PROJECT_CN.md)。*
