@@ -1,17 +1,19 @@
 # FDBCS Command Line Interface (CLI) Guide
 
-FDBCS provides a powerful Python CLI tool (`scripts/db_processor.py`) to initialize databases, export statistics, delete records, and extract sequences directly from the terminal without starting the Web UI.
+FDBCS provides a powerful unified Python CLI tool (`fdbcs.py`) to initialize databases, export statistics, delete records, extract sequences, analyze nucleotide composition, and audit taxonomy consistency directly from the terminal.
 
 ## Basic Syntax
 
 ```bash
-python3 scripts/db_processor.py <command> [options]
+python3 fdbcs.py <command> [options]
 ```
 
 Supported subcommands (`<command>`):
 - `init`: Initialize the database and compute statistics.
 - `delete`: Delete specific sequence records from the index.
 - `extract`: Extract sequences based on conditions and output as FASTA.
+- `composition`: Analyze nucleotide composition of a FASTA file.
+- `audit`: Audit taxonomy consistency of a metadata file.
 
 ---
 
@@ -30,7 +32,7 @@ Compiles the raw FASTA and Metadata files into a SQLite index database, and auto
 
 **Basic Initialization:**
 ```bash
-python3 scripts/db_processor.py init \
+python3 fdbcs.py init \
   --fasta data/human_hbb/db.fa \
   --metadata data/human_hbb/Metadata.txt \
   --sqlite storage/human_hbb.index.db
@@ -38,7 +40,7 @@ python3 scripts/db_processor.py init \
 
 **Initialize and export 'Species' statistics to a file:**
 ```bash
-python3 scripts/db_processor.py init \
+python3 fdbcs.py init \
   --fasta data/human_hbb/db.fa \
   --metadata data/human_hbb/Metadata.txt \
   --sqlite storage/human_hbb.index.db \
@@ -63,14 +65,14 @@ Deletes specified sequence records from the SQLite index database. **Note: This 
 
 **Delete a single sequence by Accession ID:**
 ```bash
-python3 scripts/db_processor.py delete \
+python3 fdbcs.py delete \
   --sqlite storage/human_hbb.index.db \
   --accession NM_000518
 ```
 
 **Batch delete sequences by taxonomy keyword:**
 ```bash
-python3 scripts/db_processor.py delete \
+python3 fdbcs.py delete \
   --sqlite storage/human_hbb.index.db \
   --taxonomy "Homo sapiens"
 ```
@@ -94,7 +96,7 @@ Utilizes the byte offsets stored in the SQLite database to achieve ultra-fast O(
 
 **Extract a sequence by Accession ID and print to screen:**
 ```bash
-python3 scripts/db_processor.py extract \
+python3 fdbcs.py extract \
   --sqlite storage/human_hbb.index.db \
   --fasta data/human_hbb/db.fa \
   --accession NM_000518
@@ -102,9 +104,37 @@ python3 scripts/db_processor.py extract \
 
 **Batch extract sequences by taxonomy and save to a new FASTA file:**
 ```bash
-python3 scripts/db_processor.py extract \
+python3 fdbcs.py extract \
   --sqlite storage/human_hbb.index.db \
   --fasta data/human_hbb/db.fa \
   --taxonomy "Homo sapiens" \
   --output homo_sapiens_extracted.fa
+```
+
+---
+
+## 4. Analyze Nucleotide Composition (`composition`)
+
+Analyzes the nucleotide composition (A, T, C, G, N) of a FASTA file.
+
+### Arguments
+- `--fasta` (Required): Path to the FASTA file.
+
+### Example
+```bash
+python3 fdbcs.py composition --fasta data/human_hbb/db.fa
+```
+
+---
+
+## 5. Audit Taxonomy Consistency (`audit`)
+
+Audits the taxonomy consistency of a metadata file, detecting shallow paths or invalid nodes.
+
+### Arguments
+- `--metadata` (Required): Path to the metadata file.
+
+### Example
+```bash
+python3 fdbcs.py audit --metadata data/human_hbb/Metadata.txt
 ```

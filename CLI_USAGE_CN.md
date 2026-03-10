@@ -1,17 +1,19 @@
 # FDBCS 命令行工具 (CLI) 使用指南
 
-FDBCS 提供了一个强大的 Python 命令行工具 (`scripts/db_processor.py`)，用于在不启动 Web 服务的情况下，直接在终端对 FASTA 数据库进行初始化、统计导出、序列删除和提取等操作。
+FDBCS 提供了一个强大的 Python 命令行工具 (`fdbcs.py`)，用于在不启动 Web 服务的情况下，直接在终端对 FASTA 数据库进行初始化、统计导出、序列删除、序列提取、碱基组成分析和分类一致性审计等操作。
 
 ## 基本语法
 
 ```bash
-python3 scripts/db_processor.py <command> [options]
+python3 fdbcs.py <command> [options]
 ```
 
 支持的子命令 (`<command>`) 包括：
 - `init`: 初始化数据库并计算统计信息
 - `delete`: 删除数据库中的指定序列
 - `extract`: 根据条件提取序列并输出为 FASTA 格式
+- `composition`: 分析 FASTA 文件的碱基组成
+- `audit`: 审计 Metadata 文件的分类一致性
 
 ---
 
@@ -30,7 +32,7 @@ python3 scripts/db_processor.py <command> [options]
 
 **基础初始化：**
 ```bash
-python3 scripts/db_processor.py init \
+python3 fdbcs.py init \
   --fasta data/human_hbb/db.fa \
   --metadata data/human_hbb/Metadata.txt \
   --sqlite storage/human_hbb.index.db
@@ -38,7 +40,7 @@ python3 scripts/db_processor.py init \
 
 **初始化并导出 Species (物种) 层级的统计数据到文件：**
 ```bash
-python3 scripts/db_processor.py init \
+python3 fdbcs.py init \
   --fasta data/human_hbb/db.fa \
   --metadata data/human_hbb/Metadata.txt \
   --sqlite storage/human_hbb.index.db \
@@ -63,14 +65,14 @@ python3 scripts/db_processor.py init \
 
 **按 Accession ID 删除单个序列：**
 ```bash
-python3 scripts/db_processor.py delete \
+python3 fdbcs.py delete \
   --sqlite storage/human_hbb.index.db \
   --accession NM_000518
 ```
 
 **按分类学关键词批量删除序列：**
 ```bash
-python3 scripts/db_processor.py delete \
+python3 fdbcs.py delete \
   --sqlite storage/human_hbb.index.db \
   --taxonomy "Homo sapiens"
 ```
@@ -94,7 +96,7 @@ python3 scripts/db_processor.py delete \
 
 **按 Accession ID 提取序列并打印到屏幕：**
 ```bash
-python3 scripts/db_processor.py extract \
+python3 fdbcs.py extract \
   --sqlite storage/human_hbb.index.db \
   --fasta data/human_hbb/db.fa \
   --accession NM_000518
@@ -102,9 +104,37 @@ python3 scripts/db_processor.py extract \
 
 **按分类学关键词批量提取序列并保存为新的 FASTA 文件：**
 ```bash
-python3 scripts/db_processor.py extract \
+python3 fdbcs.py extract \
   --sqlite storage/human_hbb.index.db \
   --fasta data/human_hbb/db.fa \
   --taxonomy "Homo sapiens" \
   --output homo_sapiens_extracted.fa
+```
+
+---
+
+## 4. 分析碱基组成 (`composition`)
+
+分析 FASTA 文件的碱基组成 (A, T, C, G, N)。
+
+### 参数
+- `--fasta` (必填): FASTA 文件路径。
+
+### 示例
+```bash
+python3 fdbcs.py composition --fasta data/human_hbb/db.fa
+```
+
+---
+
+## 5. 审计分类一致性 (`audit`)
+
+审计 Metadata 文件的分类一致性，检测浅层路径或无效节点。
+
+### 参数
+- `--metadata` (必填): Metadata 文件路径。
+
+### 示例
+```bash
+python3 fdbcs.py audit --metadata data/human_hbb/Metadata.txt
 ```

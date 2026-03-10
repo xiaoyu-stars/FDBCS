@@ -89,7 +89,7 @@ The system supports a 9-level taxonomic hierarchy:
 
 ### 5. Database Operation Unit (Bio-Ops)
 - **Unix Executable Integration**: Core bioinformatics algorithms are implemented as standalone Python scripts, called via system execution.
-- **Command Line Interface (CLI)**: Provides a powerful CLI (`scripts/db_processor.py`) for initializing databases, exporting statistics, deleting specific sequences, and O(1) sequence extraction. See [CLI_USAGE.md](./CLI_USAGE.md) for details.
+- **Command Line Interface (CLI)**: Provides a powerful unified CLI (`fdbcs.py`) for initializing databases, exporting statistics, deleting specific sequences, O(1) sequence extraction, nucleotide composition analysis, and taxonomy consistency auditing. See [CLI_USAGE.md](./CLI_USAGE.md) for details.
 - **Nucleotide Composition Analysis**: Python-based calculation of total GC content, base frequencies, and AT/GC ratios.
 - **Taxonomy Consistency Audit**: Python-based detection of taxonomic hierarchy errors or invalid nodes in metadata.
 - Terminal-style result output interface.

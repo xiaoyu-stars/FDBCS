@@ -108,7 +108,7 @@ async function startServer() {
     try {
       if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });
 
-      const scriptPath = path.join(__dirname, "scripts", "db_processor.py");
+      const scriptPath = path.join(__dirname, "fdbcs.py");
       const cmd = `python3 "${scriptPath}" init --fasta "${fastaFile}" --metadata "${metadataFile}" --sqlite "${indexPath}"`;
       
       console.log(`Executing: ${cmd}`);
@@ -185,22 +185,20 @@ async function startServer() {
     if (!fs.existsSync(fastaFile)) return res.status(404).json({ error: "FASTA not found" });
 
     try {
-      let scriptPath = "";
-      let arg = "";
+      let cmd = "";
+      const scriptPath = path.join(__dirname, "fdbcs.py");
 
       if (type === 'nucleotide_composition') {
-        scriptPath = path.join(__dirname, "scripts", "nucleotide_composition.py");
-        arg = fastaFile;
+        cmd = `python3 "${scriptPath}" composition --fasta "${fastaFile}"`;
       } else if (type === 'taxonomy_audit') {
         if (!fs.existsSync(metadataFile)) return res.status(404).json({ error: "Metadata not found" });
-        scriptPath = path.join(__dirname, "scripts", "taxonomy_audit.py");
-        arg = metadataFile;
+        cmd = `python3 "${scriptPath}" audit --metadata "${metadataFile}"`;
       } else {
         return res.status(400).json({ error: "Unknown operation type" });
       }
 
       // Execute the Python script
-      const { stdout, stderr } = await execAsync(`python3 "${scriptPath}" "${arg}"`);
+      const { stdout, stderr } = await execAsync(cmd);
       
       if (stderr && !stdout) {
         console.error("Script Error:", stderr);
