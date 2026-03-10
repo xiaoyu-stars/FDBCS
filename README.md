@@ -1,20 +1,16 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# FDBCS API Server
 
-# Run and deploy your AI Studio app
+This branch removes the web frontend and keeps only the backend API service.
 
-This contains everything you need to run your app locally.
+## Run locally
 
-View your app in AI Studio: https://ai.studio/apps/33ddb648-6e6c-4111-9d1c-1cdb4d41ea3b
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+**Prerequisites:**
+- Node.js
+- Python 3
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+2. Start the server:
    `npm run dev`
+3. Check health endpoint:
+   `curl http://localhost:3000/api/health`
